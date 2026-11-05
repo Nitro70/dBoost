@@ -1,0 +1,29 @@
+<UserControl x:Class="DBoost.App.Controls.GainEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Self" Focusable="False">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <RepeatButton x:Name="DownButton" Grid.Column="0" Style="{StaticResource StepButtonStyle}"
+                      Delay="400" Interval="60" Click="Down_Click" Content="&#xE738;"
+                      AutomationProperties.Name="Decrease" ToolTip="Lower (or scroll down)" />
+
+        <Grid Grid.Column="1" Margin="6,0">
+            <TextBox x:Name="Box" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     FontWeight="SemiBold" Padding="8,4,30,4" MinHeight="32"
+                     AutomationProperties.Name="{Binding ElementName=Self, Path=(AutomationProperties.Name)}"
+                     ToolTip="Type a number (a minus sign makes it quieter), or drag left and right" />
+            <TextBlock x:Name="UnitText" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                       IsHitTestVisible="False" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Grid>
+
+        <RepeatButton x:Name="UpButton" Grid.Column="2" Style="{StaticResource StepButtonStyle}"
+                      Delay="400" Interval="60" Click="Up_Click" Content="&#xE710;"
+                      AutomationProperties.Name="Increase" ToolTip="Raise (or scroll up)" />
+    </Grid>
+</UserControl>

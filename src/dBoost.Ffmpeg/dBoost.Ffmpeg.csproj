@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Carries ffmpeg.exe as an embedded resource. It is its own assembly on purpose: in the compressed
+    single-file exe an assembly is only unpacked into memory when it is first used, so the 130 MB
+    payload costs nothing on a normal start and is only touched the one time it gets written to disk.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>DBoost.Ffmpeg</RootNamespace>
+    <AssemblyName>dBoost.Ffmpeg</AssemblyName>
+    <FfmpegExe>$(MSBuildThisFileDirectory)..\..\third_party\ffmpeg\ffmpeg.exe</FfmpegExe>
+    <FfmpegLicense>$(MSBuildThisFileDirectory)..\..\third_party\ffmpeg\LICENSE.txt</FfmpegLicense>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(FfmpegExe)')">
+    <EmbeddedResource Include="$(FfmpegExe)" LogicalName="ffmpeg.exe" Link="ffmpeg.exe" />
+    <EmbeddedResource Include="$(FfmpegLicense)" LogicalName="ffmpeg-LICENSE.txt" Link="ffmpeg-LICENSE.txt" Condition="Exists('$(FfmpegLicense)')" />
+  </ItemGroup>
+
+</Project>

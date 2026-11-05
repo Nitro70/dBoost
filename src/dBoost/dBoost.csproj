@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>dBoost</AssemblyName>
+    <RootNamespace>DBoost.App</RootNamespace>
+    <StartupObject>DBoost.App.Program</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\dBoost.ico</ApplicationIcon>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <TieredPGO>true</TieredPGO>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Application.ThemeMode (the Windows 11 Fluent look) is still flagged experimental in WPF. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <FfmpegExe>$(MSBuildThisFileDirectory)..\..\third_party\ffmpeg\ffmpeg.exe</FfmpegExe>
+  </PropertyGroup>
+
+  <!-- dotnet publish -c Release  ->  bin\publish\dBoost.exe, one file with ffmpeg inside. -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishDir>$(MSBuildProjectDirectory)\..\..\bin\publish\</PublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dBoost.Core\dBoost.Core.csproj" />
+    <ProjectReference Include="..\dBoost.Ffmpeg\dBoost.Ffmpeg.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\dBoost.ico" />
+    <Resource Include="Assets\dBoost-256.png" />
+  </ItemGroup>
+
+  <!--
+    Stamp the bundled ffmpeg's SHA-256 into this assembly, so a normal start can tell whether the copy
+    already unpacked in %LOCALAPPDATA% is the right one without loading the 130 MB payload assembly.
+  -->
+  <Target Name="StampFfmpegHash" BeforeTargets="GetAssemblyAttributes" Condition="Exists('$(FfmpegExe)')">
+    <GetFileHash Files="$(FfmpegExe)" Algorithm="SHA256" HashEncoding="hex">
+      <Output TaskParameter="Hash" PropertyName="FfmpegSha256" />
+    </GetFileHash>
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>FfmpegSha256</_Parameter1>
+        <_Parameter2>$(FfmpegSha256)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+
+</Project>

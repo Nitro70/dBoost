@@ -1,0 +1,21 @@
+<Application x:Class="DBoost.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:DBoost.App"
+             ThemeMode="System"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Theme/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <local:BoolToVisibility x:Key="BoolToVis" />
+            <local:NullToVisibility x:Key="NullToVis" />
+            <local:InverseBool x:Key="Not" />
+            <local:DbText x:Key="DbText" />
+            <local:AllTrueToVisibility x:Key="AllTrueToVis" />
+            <local:ManyToVisibility x:Key="ManyToVis" />
+            <local:VideoGlyph x:Key="VideoGlyph" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

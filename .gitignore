@@ -1,0 +1,14 @@
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+*.log
+*.tmp
+
+# ffmpeg is downloaded by tools/get-ffmpeg.ps1, never committed (130 MB)
+third_party/ffmpeg/ffmpeg.exe
+
+# local tooling and personal data, never published
+.claude/
+CLAUDE.md

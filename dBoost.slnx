@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/dBoost.Core/dBoost.Core.csproj" />
+    <Project Path="src/dBoost.Ffmpeg/dBoost.Ffmpeg.csproj" />
+    <Project Path="src/dBoost/dBoost.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/dBoost.Tests/dBoost.Tests.csproj" />
+  </Folder>
+</Solution>
