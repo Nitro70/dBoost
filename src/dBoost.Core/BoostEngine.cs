@@ -303,6 +303,12 @@ public sealed partial class BoostEngine
         return new Waveform(seconds, peaks, rms);
     }
 
+    // ---------------------------------------------------------------- listening
+
+    /// <summary>Starts decoding one track from <paramref name="startSeconds"/> for the player.</summary>
+    public PcmReader OpenPcm(string path, int trackOrdinal, double startSeconds) =>
+        PcmReader.Start(FfmpegPath, path, trackOrdinal, startSeconds);
+
     // ---------------------------------------------------------------- preview
 
     /// <summary>

@@ -70,3 +70,22 @@ public sealed class VideoGlyph : IValueConverter
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is true ? "\uE714" : "\uE8D6";
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
 }
+
+/// <summary>Playing -> pause glyph, otherwise play glyph.</summary>
+public sealed class PlayGlyph : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is true ? "\uE769" : "\uE768";
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
+/// <summary>Seconds as "1:05" or "1:02:03".</summary>
+public sealed class TimeText : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        double s = value is double d && double.IsFinite(d) && d > 0 ? d : 0;
+        return ViewModels.FileItem.FormatDuration(TimeSpan.FromSeconds(Math.Floor(s)));
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+}

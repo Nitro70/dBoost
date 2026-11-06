@@ -38,6 +38,33 @@ public partial class MainWindow : Window
         FileList.PreviewMouseLeftButtonDown += FileList_PreviewMouseLeftButtonDown;
         FileList.PreviewMouseMove += FileList_PreviewMouseMove;
         FileList.KeyDown += FileList_KeyDown;
+        FileList.MouseDoubleClick += FileList_MouseDoubleClick;
+
+        // The progress bar only seeks when you let go, so dragging does not restart ffmpeg on every pixel.
+        ListenSlider.AddHandler(System.Windows.Controls.Primitives.Thumb.DragStartedEvent,
+            new System.Windows.Controls.Primitives.DragStartedEventHandler((_, _) => { scrubbing = true; vm.BeginScrub(); }));
+        ListenSlider.AddHandler(System.Windows.Controls.Primitives.Thumb.DragCompletedEvent,
+            new System.Windows.Controls.Primitives.DragCompletedEventHandler((_, _) => { scrubbing = false; vm.EndScrub(ListenSlider.Value); }));
+        ListenSlider.PreviewMouseLeftButtonDown += (_, _) => vm.BeginScrub();
+        ListenSlider.PreviewMouseLeftButtonUp += (_, _) => { if (!scrubbing) vm.EndScrub(ListenSlider.Value); };
+    }
+
+    private bool scrubbing;
+
+    private void FileList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is not FileItem item) return;
+        if ((e.OriginalSource as DependencyObject) is { } src && FindParent<System.Windows.Controls.Primitives.ButtonBase>(src) is not null) return;
+        vm.SelectedFile = item;
+        if (vm.PlayPauseCommand.CanExecute(null)) vm.PlayPauseCommand.Execute(null);
+        e.Handled = true;
+    }
+
+    private static T? FindParent<T>(DependencyObject d) where T : DependencyObject
+    {
+        for (var p = d; p is not null; p = System.Windows.Media.VisualTreeHelper.GetParent(p))
+            if (p is T t) return t;
+        return null;
     }
 
     // ------------------------------------------------------------ drop files in
@@ -101,12 +128,12 @@ public partial class MainWindow : Window
                 e.Handled = true;
             }
         }
-        else if (e.Key == Key.Space && vm.Advanced
+        else if (e.Key == Key.Space && Keyboard.Modifiers == ModifierKeys.None
                  && Keyboard.FocusedElement is not (TextBox or System.Windows.Controls.Primitives.ButtonBase or ComboBox or Slider))
         {
-            // Space toggles the preview, like a media player.
+            // Space plays or pauses the selected file, like a media player.
             if (vm.IsPreviewPlaying || vm.IsPreviewRendering) vm.StopPreview();
-            else if (vm.PreviewCommand.CanExecute(null)) vm.PreviewCommand.Execute(null);
+            else if (vm.PlayPauseCommand.CanExecute(null)) vm.PlayPauseCommand.Execute(null);
             e.Handled = true;
         }
     }

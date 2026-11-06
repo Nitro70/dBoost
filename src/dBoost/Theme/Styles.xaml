@@ -234,4 +234,62 @@
         </Setter>
     </Style>
 
+    <!-- Round accent play/pause button for the player. -->
+    <Style x:Key="PlayButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Ellipse x:Name="Disc" Fill="{TemplateBinding Background}" />
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Disc" Property="Fill" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Disc" Property="Fill" Value="{DynamicResource AccentFillColorTertiaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Disc" Property="Fill" Value="{DynamicResource AccentFillColorDisabledBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorDisabledBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Two-way switch segments ("New file | Original"). -->
+    <Style x:Key="SegmentStyle" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="10,3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

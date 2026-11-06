@@ -33,6 +33,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Sound output for the player (MIT). ffmpeg does the decoding. -->
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Assets\dBoost.ico" />
     <Resource Include="Assets\dBoost-256.png" />
   </ItemGroup>

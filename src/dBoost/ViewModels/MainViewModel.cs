@@ -43,6 +43,18 @@ public sealed class MainViewModel : ObservableObject
 
         Files.CollectionChanged += OnFilesChanged;
         player.PositionChanged += p => Playhead = p;
+        audio.Ended += OnListenEnded;
+        listenTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(100),
+        };
+        listenTimer.Tick += (_, _) =>
+        {
+            if (isScrubbing || !audio.IsActive) return;
+            listenPosition = audio.Position;
+            Raise(nameof(ListenPosition));
+        };
+        PlayPauseCommand = new RelayCommand(() => _ = PlayPauseAsync(), () => CanListen);
 
         AddFilesCommand = new RelayCommand(AddFilesWithDialog, () => !IsBusy);
         AddFolderCommand = new RelayCommand(AddFolderWithDialog, () => !IsBusy);
@@ -500,9 +512,15 @@ public sealed class MainViewModel : ObservableObject
                 });
                 var edits = EditsFor(f);
                 var result = await engine.ProcessAsync(f.Info!, settings, edits, ((IProgress<double>)progress).Report, ct);
+                if (result.OutputPath is { } written)
+                {
+                    try { f.OutputInfo = await engine.ProbeAsync(written); }
+                    catch (Exception ex) when (ex is MediaProbeException or IOException or InvalidOperationException) { f.OutputInfo = null; }
+                }
                 f.OutputPath = result.OutputPath;
                 f.Message = result.Notes.Count > 0 ? string.Join(" ", result.Notes) : null;
                 f.State = result.Skipped ? FileState.Skipped : FileState.Done;
+                if (f == selectedFile && !audio.IsPlaying) StopListening();
             }
             catch (OperationCanceledException)
             {
@@ -555,6 +573,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (selectedFile == value) return;
             StopPreview();
+            StopListening();
             if (selectedFile is not null) selectedFile.PropertyChanged -= OnSelectedFileChanged;
             selectedFile = value;
             if (selectedFile is not null) selectedFile.PropertyChanged += OnSelectedFileChanged;
@@ -562,6 +581,7 @@ public sealed class MainViewModel : ObservableObject
             Raise();
             Raise(nameof(HasSelection));
             Raise(nameof(EffectiveGainDb));
+            RaiseListen();
             if (advanced) EnsureWaveform(value);
         }
     }
@@ -575,6 +595,8 @@ public sealed class MainViewModel : ObservableObject
     private void OnSelectedFileChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(FileItem.UseOwnGain) or nameof(FileItem.OwnGainDb)) Raise(nameof(EffectiveGainDb));
+        if (e.PropertyName is nameof(FileItem.Info) or nameof(FileItem.OutputPath) or nameof(FileItem.OutputInfo) or nameof(FileItem.State))
+            RaiseListen();
     }
 
     private SegmentItem? selectedSegment;
@@ -626,6 +648,7 @@ public sealed class MainViewModel : ObservableObject
     {
         StopPreview();
         EnsureWaveform(f);
+        if (f == selectedFile && audio.IsActive) RestartListening();
     }
 
     private void AddSegmentAtCursor()
@@ -688,6 +711,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (SelectedFile is not { Info: { } info, WaveformTrack: { } track } f) return;
         StopPreview();
+        if (audio.IsPlaying) { audio.Pause(); listenPosition = audio.Position; RaiseListen(); }
         previewCts = new CancellationTokenSource();
         var ct = previewCts.Token;
         IsPreviewRendering = true;
@@ -738,6 +762,185 @@ public sealed class MainViewModel : ObservableObject
         try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 
+    // ================================================================ listening to the selected file
+
+    private readonly AudioPlayer audio = new();
+    private readonly System.Windows.Threading.DispatcherTimer listenTimer;
+    private bool listenToOriginal;
+    private double listenPosition;
+    private bool isScrubbing;
+    private FileItem? playingItem;
+
+    /// <summary>The selected file has sound the player can play.</summary>
+    public bool CanListen => selectedFile?.Info is { AudioStreams.Count: > 0 };
+
+    /// <summary>The selected file has a boosted copy on disk.</summary>
+    public bool HasNewFile => selectedFile is { OutputPath: { } o } && File.Exists(o);
+
+    /// <summary>Compare: play the original instead of the new file (switches at the same spot while playing).</summary>
+    public bool ListenToOriginal
+    {
+        get => listenToOriginal;
+        set { if (Set(ref listenToOriginal, value)) RestartListening(); }
+    }
+
+    public bool IsListening => audio.IsPlaying;
+    /// <summary>Playback position. The progress bar writes it while you drag; the jump itself happens when you let go.</summary>
+    public double ListenPosition
+    {
+        get => listenPosition;
+        set { if (double.IsFinite(value)) listenPosition = value; }
+    }
+    public double ListenDuration => CurrentSource() is { Info: { DurationSeconds: double d } } ? d : 0;
+
+    private bool UsingNewFile => !listenToOriginal && HasNewFile;
+
+    public string ListenTitle => (UsingNewFile ? selectedFile?.OutputName : selectedFile?.Name) ?? "";
+
+    public string ListenSourceLabel =>
+        UsingNewFile ? "New file"
+        : HasNewFile ? "Original"
+        : selectedFile?.IsDone == true ? "Original (the new file was moved or deleted)"
+        : "Original (not boosted yet)";
+
+    private (string Path, MediaInfo? Info)? CurrentSource()
+    {
+        if (selectedFile?.Info is not { } info) return null;
+        if (UsingNewFile) return (selectedFile.OutputPath!, selectedFile.OutputInfo);
+        return (selectedFile.Path, info);
+    }
+
+    /// <summary>The track to hear: the one picked for the waveform in advanced mode, else the file's default track.</summary>
+    private int TrackFor(MediaInfo? source)
+    {
+        var f = selectedFile!;
+        int wanted = advanced && f.WaveformTrack is not null
+            ? f.WaveformTrack.Info.Ordinal
+            : f.Info!.AudioStreams.FirstOrDefault(a => a.IsDefault)?.Ordinal ?? 0;
+        return source is not null && wanted < source.AudioStreams.Count ? wanted : 0;
+    }
+
+    private async Task PlayPauseAsync()
+    {
+        if (audio.IsPlaying)
+        {
+            audio.Pause();
+            listenPosition = audio.Position;
+            RaiseListen();
+            return;
+        }
+        if (audio.IsPaused && audio.Path == CurrentSource()?.Path)
+        {
+            StopPreview();
+            audio.Resume();
+            listenTimer.Start();
+            RaiseListen();
+            return;
+        }
+        await StartListeningAsync(listenPosition);
+    }
+
+    private async Task StartListeningAsync(double from)
+    {
+        if (CurrentSource() is not { } src || selectedFile is not { } f) return;
+        if (!File.Exists(src.Path))
+        {
+            StatusText = "That file is not there any more.";
+            return;
+        }
+        StopPreview();
+        double duration = ListenDuration;
+        if (duration > 0 && from >= duration - 0.25) from = 0;
+        try
+        {
+            var engine = await EngineHost.GetAsync();
+            if (selectedFile != f) return; // the selection changed while ffmpeg was starting
+            audio.Play(engine, src.Path, TrackFor(src.Info), from);
+            if (playingItem is not null && playingItem != f) playingItem.IsPlayingNow = false;
+            playingItem = f;
+            f.IsPlayingNow = true;
+            listenPosition = from;
+            listenTimer.Start();
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Could not play: {ex.Message}";
+        }
+        RaiseListen();
+    }
+
+    /// <summary>Jump to a time (from the progress bar). Keeps playing if it was playing.</summary>
+    public void SeekListening(double seconds)
+    {
+        double max = ListenDuration;
+        seconds = max > 0 ? Math.Clamp(seconds, 0, max) : Math.Max(0, seconds);
+        if (audio.IsPlaying)
+        {
+            _ = StartListeningAsync(seconds);
+            return;
+        }
+        audio.Stop(seconds);
+        listenPosition = seconds;
+        RaiseListen();
+    }
+
+    public void BeginScrub() => isScrubbing = true;
+
+    public void EndScrub(double seconds)
+    {
+        isScrubbing = false;
+        SeekListening(seconds);
+    }
+
+    /// <summary>Same spot, different source or track (the New file / Original switch).</summary>
+    private void RestartListening()
+    {
+        double at = audio.IsActive ? audio.Position : listenPosition;
+        double max = ListenDuration;
+        if (max > 0) at = Math.Min(at, Math.Max(0, max - 0.5));
+        if (audio.IsPlaying) _ = StartListeningAsync(at);
+        else
+        {
+            audio.Stop(at);
+            listenPosition = at;
+            RaiseListen();
+        }
+    }
+
+    public void StopListening()
+    {
+        audio.Stop();
+        listenTimer.Stop();
+        listenPosition = 0;
+        if (playingItem is not null) playingItem.IsPlayingNow = false;
+        playingItem = null;
+        RaiseListen();
+    }
+
+    private void OnListenEnded(string? errors)
+    {
+        listenTimer.Stop();
+        bool failedEarly = errors is not null && audio.Position < 0.5;
+        listenPosition = 0;
+        if (playingItem is not null) playingItem.IsPlayingNow = false;
+        playingItem = null;
+        if (failedEarly) StatusText = $"Could not play: {errors!.Split('\n')[0].Trim()}";
+        RaiseListen();
+    }
+
+    private void RaiseListen()
+    {
+        Raise(nameof(CanListen));
+        Raise(nameof(HasNewFile));
+        Raise(nameof(IsListening));
+        Raise(nameof(ListenPosition));
+        Raise(nameof(ListenDuration));
+        Raise(nameof(ListenTitle));
+        Raise(nameof(ListenSourceLabel));
+        Raise(nameof(ListenToOriginal));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
     /// <summary>Starts ffmpeg early (the first start unpacks it) and says so if that takes a moment or fails.</summary>
     public async Task WarmUpAsync()
     {
@@ -783,6 +986,8 @@ public sealed class MainViewModel : ObservableObject
 
     public void Shutdown()
     {
+        listenTimer.Stop();
+        audio.Dispose();
         runCts?.Cancel();
         StopPreview();
         PreviewPlayer.CleanTempFolder();
@@ -813,4 +1018,5 @@ public sealed class MainViewModel : ObservableObject
     public ICommand AddSegmentCommand { get; }
     public ICommand RemoveSegmentCommand { get; }
     public ICommand ClearSegmentsCommand { get; }
+    public ICommand PlayPauseCommand { get; }
 }

@@ -37,6 +37,9 @@ public sealed class FfmpegRunner(string ffmpegPath)
 
     private static readonly Lazy<JobObject?> Job = new(JobObject.TryCreate);
 
+    /// <summary>Puts a process started elsewhere into the kill-on-close job, so it never outlives dBoost.</summary>
+    internal static void Adopt(Process p) => Job.Value?.Assign(p);
+
     /// <summary>Runs ffmpeg. With <paramref name="stdoutReader"/> the caller consumes stdout (binary output);
     /// otherwise stdout is read as <c>-progress</c> lines and <paramref name="onProgress"/> gets the position.</summary>
     public async Task<FfmpegResult> RunAsync(IReadOnlyList<string> args, CancellationToken ct,

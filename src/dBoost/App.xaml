@@ -16,6 +16,8 @@
             <local:AllTrueToVisibility x:Key="AllTrueToVis" />
             <local:ManyToVisibility x:Key="ManyToVis" />
             <local:VideoGlyph x:Key="VideoGlyph" />
+            <local:PlayGlyph x:Key="PlayGlyph" />
+            <local:TimeText x:Key="TimeText" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

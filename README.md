@@ -29,6 +29,10 @@ then **Run anyway**.
 3. Press **Boost** (Ctrl+Enter). Each finished file shows **Saved** and its new name: click it to see it
    in Explorer, or drag the row straight into Explorer, a chat app or an editor.
 
+4. Listen to the result. Select a file and press play (or Space, or double-click the file). Videos play
+   their sound only. Drag or click the progress bar to jump, and switch between **New file** and
+   **Original** to compare the two at the same spot.
+
 Results go next to each original. Click **Change...** at the bottom to save them all into one folder.
 
 ## Advanced mode
@@ -49,7 +53,7 @@ whole files.
 - **Measure.** Shows a track's loudest peak, its loudness, and how much room there is before it clips,
   with one click to use it.
 - **Preview.** Listen to 10 seconds with every change applied, from wherever you click on the
-  waveform, and to the original to compare. Space starts and stops it.
+  waveform, and to the original to compare, before saving anything.
 - **Clipping control.** Turn the limiter off for a raw boost, or set its ceiling.
 - **Tone and channels.** Bass, treble, and separate left and right levels.
 - **Fades.** Fade in and fade out.

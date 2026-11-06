@@ -112,6 +112,14 @@ public sealed class FileItem : ObservableObject
 
     public string? OutputName => outputPath is null ? null : System.IO.Path.GetFileName(outputPath);
 
+    private MediaInfo? outputInfo;
+    /// <summary>What ffmpeg found in the boosted file (for the player's length and tracks).</summary>
+    public MediaInfo? OutputInfo { get => outputInfo; set => Set(ref outputInfo, value); }
+
+    private bool isPlayingNow;
+    /// <summary>True while the player is playing this file (shows a speaker on its row).</summary>
+    public bool IsPlayingNow { get => isPlayingNow; set => Set(ref isPlayingNow, value); }
+
     /// <summary>A failure while boosting (not while reading), which pressing Boost again can retry.</summary>
     public bool CanRetry { get => canRetry; set { if (Set(ref canRetry, value)) Raise(nameof(IsUsable)); } }
 

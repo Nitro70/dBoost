@@ -82,6 +82,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <Grid Margin="16,10,8,6">
@@ -148,8 +149,13 @@
                                         </Border>
 
                                         <StackPanel Grid.Column="1" Margin="12,0,8,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="&#xE767;" FontSize="13" Margin="0,0,6,0"
+                                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" ToolTip="Playing"
+                                                           Visibility="{Binding IsPlayingNow, Converter={StaticResource BoolToVis}}" />
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            </DockPanel>
                                             <TextBlock Text="{Binding Details}" Style="{StaticResource Caption}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                             <Button Style="{StaticResource LinkButtonStyle}" FontSize="12" HorizontalAlignment="Left" Margin="0,2,0,0"
                                                     Content="{Binding OutputName}" Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}"
@@ -222,6 +228,70 @@
                                         Margin="0,16,0,0" Padding="18,7" Command="{Binding AddFilesCommand}" />
                             </StackPanel>
                         </Grid>
+
+                        <!-- player: listen to the selected file (sound only, even for videos) -->
+                        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                                Padding="14,10,16,12" Visibility="{Binding CanListen, Converter={StaticResource BoolToVis}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="PlayButton" Style="{StaticResource PlayButtonStyle}" Command="{Binding PlayPauseCommand}" VerticalAlignment="Center"
+                                        Content="{Binding IsListening, Converter={StaticResource PlayGlyph}}"
+                                        AutomationProperties.Name="Play or pause the selected file"
+                                        ToolTip="Play or pause the selected file (Space). Double-click a file to play it." />
+                                <Grid Grid.Column="1" Margin="12,0,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <DockPanel Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding ListenSourceLabel}" Style="{StaticResource Caption}" TextWrapping="NoWrap"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding ListenTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" ToolTip="{Binding ListenTitle}" />
+                                    </DockPanel>
+
+                                    <!-- compare: the new file or the original, switching at the same spot -->
+                                    <Border Grid.Column="2" CornerRadius="6" BorderThickness="1" Padding="2"
+                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                            Visibility="{Binding HasNewFile, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource SegmentStyle}" GroupName="ListenSource" Content="New file"
+                                                         IsChecked="{Binding ListenToOriginal, Converter={StaticResource Not}}"
+                                                         ToolTip="Listen to the boosted file" />
+                                            <RadioButton Style="{StaticResource SegmentStyle}" GroupName="ListenSource" Content="Original"
+                                                         IsChecked="{Binding ListenToOriginal}"
+                                                         ToolTip="Listen to the original at the same spot, to compare" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Grid Grid.Row="1" Grid.ColumnSpan="3" Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Value, ElementName=ListenSlider, Converter={StaticResource TimeText}}"
+                                                   Style="{StaticResource Caption}" VerticalAlignment="Center" MinWidth="44" Margin="0,0,8,0" />
+                                        <Slider x:Name="ListenSlider" Grid.Column="1" VerticalAlignment="Center"
+                                                Minimum="0" Maximum="{Binding ListenDuration, Mode=OneWay}" Value="{Binding ListenPosition}"
+                                                IsMoveToPointEnabled="True" IsEnabled="{Binding CanListen}" Focusable="False"
+                                                AutomationProperties.Name="Playback position" ToolTip="Click or drag to jump" />
+                                        <TextBlock Grid.Column="2" Text="{Binding ListenDuration, Converter={StaticResource TimeText}}"
+                                                   Style="{StaticResource Caption}" VerticalAlignment="Center" MinWidth="44" TextAlignment="Right" Margin="8,0,0,0" />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Border>
                     </Grid>
                 </Border>
 
@@ -272,7 +342,7 @@
                                     </StackPanel>
                                 </Button>
                                 <Button Style="{StaticResource SubtleButtonStyle}" Command="{Binding StopPreviewCommand, Source={StaticResource Vm}}"
-                                        ToolTip="Stop playing (Space starts and stops the preview)">
+                                        ToolTip="Stop the preview">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Style="{StaticResource Glyph}" Text="&#xE71A;" Margin="0,0,6,0" />
                                         <TextBlock Text="Stop" />
