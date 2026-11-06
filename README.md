@@ -35,6 +35,8 @@ then **Run anyway**.
 
 Results go next to each original. Click **Change...** at the bottom to save them all into one folder.
 
+![Listening to a boosted file](docs/done-light.png)
+
 ## Advanced mode
 
 Switch on **Advanced** (top right) for more control. With it off, dBoost just changes the volume of

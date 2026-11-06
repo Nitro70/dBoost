@@ -20,6 +20,11 @@ That FFmpeg build includes these libraries, each under its own licence (LGPL-com
 LAME (libmp3lame, LGPL), Opus (BSD), Vorbis and Ogg (BSD), and others listed by `ffmpeg -version`.
 See https://ffmpeg.org/legal.html.
 
+## NAudio
+
+The player uses [NAudio](https://github.com/naudio/NAudio) 2.2.1 (NAudio.Core and NAudio.WinMM) to send
+sound to Windows. MIT licence, Copyright 2020 Mark Heath.
+
 ## .NET
 
 The exe is a self-contained .NET 10 application and includes the .NET runtime and WPF
